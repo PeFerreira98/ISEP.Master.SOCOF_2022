@@ -6,17 +6,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.awt.Color;
 
 public class ApplyFilters {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 
         // sequentialHighlightFires();
 
         // parallelHighlightFires();
 
         sequentialImageCleaning();
+
+        parallelImageCleaning();
     }
 
     static void sequentialHighlightFires() throws IOException {
@@ -58,9 +61,12 @@ public class ApplyFilters {
             AtomicInteger atomicInteger = new AtomicInteger(i);
 
             CompletableFuture
-                .supplyAsync(() -> Utils.loadImage("HighlightFires/russia" + String.valueOf(atomicInteger) + ".jpg"), executor)
-                .thenApply(f -> new Filters().HighLightFire(f, threshold))
-                .thenAccept(action -> Utils.writeImage(action, "para1/russia" + String.valueOf(atomicInteger) + ".jpg"));
+                    .supplyAsync(
+                            () -> Utils.loadImage("HighlightFires/russia" + String.valueOf(atomicInteger) + ".jpg"),
+                            executor)
+                    .thenApply(f -> new Filters().HighLightFire(f, threshold))
+                    .thenAccept(action -> Utils.writeImage(action,
+                            "para1/russia" + String.valueOf(atomicInteger) + ".jpg"));
         }
 
         executor.shutdown();
@@ -74,15 +80,41 @@ public class ApplyFilters {
         String filename1 = "CleanImage/clean1.jpg";
         String filename2 = "CleanImage/clean2.jpg";
         String filename3 = "CleanImage/clean3.jpg";
+        String outputFilename = "seq2/cleanedImage.jpg";
         Cleaners cleaners = new Cleaners(filename1, filename2, filename3);
 
         System.out.println("Starting Sequential Image Cleaning...");
         Long timeStart = System.currentTimeMillis();
 
-        cleaners.CleanImage("seq2/cleanedImage.jpg");
+        cleaners.CleanImage(outputFilename);
 
         Long timeEnd = System.currentTimeMillis();
         System.out.println("Sequential Image Clean Finished...");
+        System.out.println("Time: " + (timeEnd - timeStart) + " ms");
+    }
+
+    static void parallelImageCleaning() throws IOException, InterruptedException, ExecutionException {
+        String filename1 = "CleanImage/clean1.jpg";
+        String filename2 = "CleanImage/clean2.jpg";
+        String filename3 = "CleanImage/clean3.jpg";
+        String outputFilename = "para2/cleanedImage.jpg";
+
+        int threadNumber = 6;
+        ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
+
+        System.out.println("Starting Parallel Image Cleaning...");
+        Long timeStart = System.currentTimeMillis();
+
+        CompletableFuture
+                .supplyAsync(() -> new Cleaners(filename1, filename2, filename3), executor)
+                .thenApply(f -> f.cleanImage())
+                .thenAccept(action -> Utils.writeImage(action, outputFilename))
+                .get();
+
+        executor.shutdown();
+
+        Long timeEnd = System.currentTimeMillis();
+        System.out.println("Parallel Image Clean Finished...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 }

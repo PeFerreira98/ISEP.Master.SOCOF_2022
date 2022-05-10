@@ -8,7 +8,15 @@ public class Cleaners {
     Color image2[][];
     Color image3[][];
 
+    Cleaners(){
+
+    }
+
     Cleaners(String filename1, String filename2, String filename3) {
+        this.LoadImages(filename1, filename2, filename3);
+    }
+
+    public void LoadImages(String filename1, String filename2, String filename3) {
         image1 = Utils.loadImage(filename1);
         image2 = Utils.loadImage(filename2);
         image3 = Utils.loadImage(filename3);
@@ -21,6 +29,10 @@ public class Cleaners {
 
         System.out.println("Starting file write...");
         Utils.writeImage(tmp, outputFile);
+    }
+
+    public Color[][] cleanImage() {
+        return cleanImage(new Color[image1.length][image1[0].length], this.image1, this.image2, this.image3);
     }
 
     public static Color[][] cleanImage(Color[][] tmp, Color[][] image1, Color[][] image2, Color[][] image3) {
