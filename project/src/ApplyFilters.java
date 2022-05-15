@@ -33,7 +33,7 @@ public class ApplyFilters {
         }
 
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("\nSequential Highlight Fires Finished...");
+        System.out.println("\nFinished Sequential Highlight Fires...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 
@@ -58,7 +58,7 @@ public class ApplyFilters {
             threads[i].join();
         }
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("\nMultiThread Highlight Fires Finished...");
+        System.out.println("\nFinished MultiThread Highlight Fires...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 
@@ -85,7 +85,7 @@ public class ApplyFilters {
         executor.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES);
         
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("\nPoolThread Highlight Fires Finished...");
+        System.out.println("\nFinished PoolThread Highlight Fires...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 
