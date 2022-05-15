@@ -1,8 +1,5 @@
-
+import java.io.*;
 import java.awt.Color;
-import java.io.IOException;
-
-import javax.rmi.CORBA.Util;
 
 /**
  * Creating image filters
@@ -12,41 +9,39 @@ import javax.rmi.CORBA.Util;
  * @version 1.0
  * @since 2022-01-04
  */
-public class Filters {
+public class Filters implements Runnable{
 
-    String file;
-    Color image[][];
+    String filename;
+    float threshold;
+    String outputFilename;
 
-    // Constructor with filename for source image
-    Filters(String filename) {
-        this.file = filename;
-        image = Utils.loadImage(filename);
+    Filters(String filename, float threshold, String outputFilename) {
+        this.filename = filename;
+        this.threshold = threshold;
+        this.outputFilename = outputFilename;
     }
 
-    Filters(){
-        this.file = "";
-        image = null;
+    public void run() {
+        try {
+            HighLightFireFilter();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // Highlight Fires.
-    public void HighLightFireFilter(String outputFile, float threshold) throws IOException {
-        Color[][] tmp = Utils.copyImage(image);
+    public void HighLightFireFilter() throws IOException {
+        var image = Utils.loadImage(filename);
 
-        System.out.println("Pixel image size " + tmp.length + "," + tmp[0].length);
+        HighLightFire(image, threshold);
 
-        this.HighLightFire(tmp, threshold);
-
-        System.out.println("Starting file write...");
-        Utils.writeImage(tmp, outputFile);
+        Utils.writeImage(image, outputFilename);
     }
 
-    public Color[][] HighLightFire(Color[][] tmp, float threshold) {
+    public static Color[][] HighLightFire(Color[][] tmp, float threshold) {
         for (int i = 0; i < tmp.length; i++) {
             for (int j = 0; j < tmp[i].length; j++) {
-
-                Color pixel = tmp[i][j];
-                tmp[i][j] = Utils.RedFilter(pixel, threshold);
-
+                tmp[i][j] = Utils.RedFilter(tmp[i][j], threshold);
             }
 
             if (i % 100 == 0)

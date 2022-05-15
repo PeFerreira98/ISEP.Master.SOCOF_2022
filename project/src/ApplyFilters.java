@@ -1,78 +1,91 @@
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import java.awt.Color;
 
 public class ApplyFilters {
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 
-        // sequentialHighlightFires();
+        sequentialHighlightFires();
+        multiHighlightFires();
+        poolHighlightFires();
 
-        // parallelHighlightFires();
-
-        sequentialImageCleaning();
-
-        parallelImageCleaning();
+        // sequentialImageCleaning();
+        // multiImageCleaning();
+        // poolImageCleaning();
     }
 
     static void sequentialHighlightFires() throws IOException {
-        // Scanner input = new Scanner(System.in);
-        // String filePath = "";
-        // System.out.println("Insert the name of the file path you would like to
-        // use:");
-        // filePath = input.nextLine();
-        // System.out.println("Insert the red value threshold:");
-        // float threshold = input.nextFloat();
-        // input.close();
-
         int filenumber = 3;
         float threshold = 1.35f;
 
         System.out.println("Starting Sequential Highlight Fires...");
         Long timeStart = System.currentTimeMillis();
 
-        for (int i = 2; i <= filenumber; i++) {
-            Filters filters = new Filters("HighlightFires/russia" + String.valueOf(new AtomicInteger(i)) + ".jpg");
-            filters.HighLightFireFilter("seq1/russia" + String.valueOf(new AtomicInteger(i)) + ".jpg", threshold);
+        for (int i = 1; i <= filenumber; i++) {
+            var inputFile = "HighlightFires/russia" + String.valueOf(new AtomicInteger(i)) + ".jpg";
+            var outputFile = "seq1/russia" + String.valueOf(new AtomicInteger(i)) + "_highlight.jpg";
+            var filters = new Filters(inputFile, threshold, outputFile);
+            filters.HighLightFireFilter();
         }
 
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("Sequential Highlight Fires Finished...");
+        System.out.println("\nSequential Highlight Fires Finished...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 
-    static void parallelHighlightFires() throws IOException {
+    static void multiHighlightFires() throws IOException, InterruptedException {
+        int filenumber = 3;
+        float threshold = 1.35f;
+        Thread[] threads = new Thread[filenumber];    
+
+        System.out.println("Starting MultiThread Highlight Fires...");
+        Long timeStart = System.currentTimeMillis();
+
+        for (int i = 1; i <= filenumber; i++) {
+            var inputFile = "HighlightFires/russia" + String.valueOf(new AtomicInteger(i)) + ".jpg";
+            var outputFile = "thrd1/russia" + String.valueOf(new AtomicInteger(i)) + "_highlight.jpg";
+            var filters = new Filters(inputFile, threshold, outputFile);
+
+            threads[i-1] = new Thread(filters);
+            threads[i-1].start();
+        }
+
+        for (int i = 0; i < filenumber; i++) {
+            threads[i].join();
+        }
+        Long timeEnd = System.currentTimeMillis();
+        System.out.println("\nMultiThread Highlight Fires Finished...");
+        System.out.println("Time: " + (timeEnd - timeStart) + " ms");
+    }
+
+    static void poolHighlightFires() throws IOException, InterruptedException {
         int threadNumber = 6;
         int filenumber = 3;
         float threshold = 1.35f;
         ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
 
-        System.out.println("Starting Parallel Highlight Fires...");
+        System.out.println("Starting PoolThread Highlight Fires...");
         Long timeStart = System.currentTimeMillis();
 
         for (int i = 1; i <= filenumber; i++) {
-            AtomicInteger atomicInteger = new AtomicInteger(i);
+            var inputFile = "HighlightFires/russia" + String.valueOf(new AtomicInteger(i)) + ".jpg";
+            var outputFile = "thrd1/russia" + String.valueOf(new AtomicInteger(i)) + "_highlight.jpg";
 
             CompletableFuture
-                    .supplyAsync(
-                            () -> Utils.loadImage("HighlightFires/russia" + String.valueOf(atomicInteger) + ".jpg"),
-                            executor)
-                    .thenApply(f -> new Filters().HighLightFire(f, threshold))
-                    .thenAccept(action -> Utils.writeImage(action,
-                            "para1/russia" + String.valueOf(atomicInteger) + ".jpg"));
+                    .supplyAsync(() -> Utils.loadImage(inputFile), executor)
+                    .thenApply(f -> Filters.HighLightFire(f, threshold))
+                    .thenAccept(action -> Utils.writeImage(action, outputFile));
         }
 
         executor.shutdown();
-
+        executor.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES);
+        
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("Parallel Highlight Fires Finished...");
+        System.out.println("\nPoolThread Highlight Fires Finished...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 

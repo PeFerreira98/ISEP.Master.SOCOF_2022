@@ -1,8 +1,6 @@
 import java.awt.Color;
 import java.io.IOException;
 
-import javax.rmi.CORBA.Util;
-
 public class Cleaners {
     Color image1[][];
     Color image2[][];
@@ -43,40 +41,12 @@ public class Cleaners {
                 Color p2 = image2[i][j];
                 Color p3 = image3[i][j];
 
-                tmp[i][j] = choosePixel(p1, p2, p3);
+                tmp[i][j] = Utils.choosePixel(p1, p2, p3);
             }
         }
 
         return tmp;
     }
 
-    private static Color choosePixel(Color s1, Color s2, Color s3){
-        Color average = averagePixelColor(s1, s2, s3);
 
-        int distance1 = calculateDistance(average, s1);
-        int distance2 = calculateDistance(average, s2);
-        int distance3 = calculateDistance(average, s3);
-
-        if (distance1 < distance2 && distance1 < distance3) {
-            return s1;
-        } else if (distance2 < distance1 && distance2 < distance3) {
-            return s2;
-        } else {
-            return s3;
-        }
-    }
-
-    private static Color averagePixelColor(Color s1, Color s2, Color s3) {
-        int r = (s1.getRed() + s2.getRed() + s3.getRed()) / 3;
-        int g = (s1.getGreen() + s2.getGreen() + s3.getGreen()) / 3;
-        int b = (s1.getBlue() + s2.getBlue() + s3.getBlue()) / 3;
-        return new Color(r, g, b);
-    }
-
-    private static int calculateDistance(Color average, Color s1) {
-        int r = average.getRed() - s1.getRed();
-        int g = average.getGreen() - s1.getGreen();
-        int b = average.getBlue() - s1.getBlue();
-        return (int) Math.sqrt(r * r + g * g + b * b);
-    }
 }
