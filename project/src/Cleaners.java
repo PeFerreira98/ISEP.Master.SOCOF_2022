@@ -1,52 +1,52 @@
 import java.awt.Color;
 import java.io.IOException;
 
-public class Cleaners {
-    Color image1[][];
-    Color image2[][];
-    Color image3[][];
+public class Cleaners implements Runnable{
+    String filename1;
+    String filename2;
+    String filename3;
+    String outputFilename;
 
-    Cleaners(){
-
+    Cleaners(String filename1, String filename2, String filename3, String outputFilename) {
+        this.filename1 = filename1;
+        this.filename2 = filename2;
+        this.filename3 = filename3;
+        this.outputFilename = outputFilename;
     }
 
-    Cleaners(String filename1, String filename2, String filename3) {
-        this.LoadImages(filename1, filename2, filename3);
+    public void run() {
+        try {
+            CleanImage();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void LoadImages(String filename1, String filename2, String filename3) {
-        image1 = Utils.loadImage(filename1);
-        image2 = Utils.loadImage(filename2);
-        image3 = Utils.loadImage(filename3);
+    public void CleanImage() throws IOException {
+        var image1 = Utils.loadImage(filename1);
+        var image2 = Utils.loadImage(filename2);
+        var image3 = Utils.loadImage(filename3);
+
+        var tmp = CleanImage(image1, image2, image3);
+
+        Utils.writeImage(tmp, outputFilename);
     }
 
-    public void CleanImage(String outputFile) throws IOException {
-        Color[][] tmp = Utils.copyImage(image1);
+    public static Color[][] CleanImage(Color[][] image1, Color[][] image2, Color[][] image3) {
+        Color[][] tmp = new Color[image1.length][image1[0].length];
 
-        tmp = cleanImage(tmp, image1, image2, image3);
-
-        System.out.println("Starting file write...");
-        Utils.writeImage(tmp, outputFile);
-    }
-
-    public Color[][] cleanImage() {
-        return cleanImage(new Color[image1.length][image1[0].length], this.image1, this.image2, this.image3);
-    }
-
-    public static Color[][] cleanImage(Color[][] tmp, Color[][] image1, Color[][] image2, Color[][] image3) {
         for (int i = 0; i < tmp.length; i++) {
             for (int j = 0; j < tmp[i].length; j++) {
-
                 Color p1 = image1[i][j];
                 Color p2 = image2[i][j];
                 Color p3 = image3[i][j];
-
                 tmp[i][j] = Utils.choosePixel(p1, p2, p3);
             }
+
+            if (i % 100 == 0)
+                System.out.print(".");
         }
 
         return tmp;
     }
-
-
 }

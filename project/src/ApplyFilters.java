@@ -1,21 +1,23 @@
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class ApplyFilters {
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 
-        sequentialHighlightFires();
-        multiHighlightFires();
-        poolHighlightFires();
+        // sequentialHighlightFires();
+        // multiHighlightFires();
+        // poolHighlightFires();
 
-        // sequentialImageCleaning();
-        // multiImageCleaning();
-        // poolImageCleaning();
+        sequentialImageCleaning();
+        multiImageCleaning();
+        poolImageCleaning();
     }
 
     static void sequentialHighlightFires() throws IOException {
@@ -40,7 +42,7 @@ public class ApplyFilters {
     static void multiHighlightFires() throws IOException, InterruptedException {
         int filenumber = 3;
         float threshold = 1.35f;
-        Thread[] threads = new Thread[filenumber];    
+        Thread[] threads = new Thread[filenumber];
 
         System.out.println("Starting MultiThread Highlight Fires...");
         Long timeStart = System.currentTimeMillis();
@@ -50,8 +52,8 @@ public class ApplyFilters {
             var outputFile = "thrd1/russia" + String.valueOf(new AtomicInteger(i)) + "_highlight.jpg";
             var filters = new Filters(inputFile, threshold, outputFile);
 
-            threads[i-1] = new Thread(filters);
-            threads[i-1].start();
+            threads[i - 1] = new Thread(filters);
+            threads[i - 1].start();
         }
 
         for (int i = 0; i < filenumber; i++) {
@@ -83,7 +85,7 @@ public class ApplyFilters {
 
         executor.shutdown();
         executor.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES);
-        
+
         Long timeEnd = System.currentTimeMillis();
         System.out.println("\nFinished PoolThread Highlight Fires...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
@@ -94,40 +96,74 @@ public class ApplyFilters {
         String filename2 = "CleanImage/clean2.jpg";
         String filename3 = "CleanImage/clean3.jpg";
         String outputFilename = "seq2/cleanedImage.jpg";
-        Cleaners cleaners = new Cleaners(filename1, filename2, filename3);
 
         System.out.println("Starting Sequential Image Cleaning...");
         Long timeStart = System.currentTimeMillis();
 
-        cleaners.CleanImage(outputFilename);
+        Cleaners cleaners = new Cleaners(filename1, filename2, filename3, outputFilename);
+        cleaners.CleanImage();
 
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("Sequential Image Clean Finished...");
+        System.out.println("\nFinished Sequential Image Clean...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 
-    static void parallelImageCleaning() throws IOException, InterruptedException, ExecutionException {
+    static void multiImageCleaning() throws IOException, InterruptedException {
+        String filename1 = "CleanImage/clean1.jpg";
+        String filename2 = "CleanImage/clean2.jpg";
+        String filename3 = "CleanImage/clean3.jpg";
+        String outputFilename = "thrd2/cleanedImage.jpg";
+
+        System.out.println("Starting MultiThread Image Cleaning...");
+        Long timeStart = System.currentTimeMillis();
+
+        Cleaners cleaners = new Cleaners(filename1, filename2, filename3, outputFilename);
+        var thread = new Thread(cleaners);
+        thread.start();
+
+        thread.join();
+
+        Long timeEnd = System.currentTimeMillis();
+        System.out.println("\nFinished MultiThread Image Cleaning...");
+        System.out.println("Time: " + (timeEnd - timeStart) + " ms");
+    }
+
+    static void poolImageCleaning() throws IOException, InterruptedException {
         String filename1 = "CleanImage/clean1.jpg";
         String filename2 = "CleanImage/clean2.jpg";
         String filename3 = "CleanImage/clean3.jpg";
         String outputFilename = "para2/cleanedImage.jpg";
+        List<String> filenames = List.of(filename1, filename2, filename3);
 
         int threadNumber = 6;
         ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
 
-        System.out.println("Starting Parallel Image Cleaning...");
+        System.out.println("Starting PoolThread Image Cleaning...");
         Long timeStart = System.currentTimeMillis();
 
-        CompletableFuture
-                .supplyAsync(() -> new Cleaners(filename1, filename2, filename3), executor)
-                .thenApply(f -> f.cleanImage())
-                .thenAccept(action -> Utils.writeImage(action, outputFilename))
-                .get();
+        // Async load images (Task[] in C#)
+        var futures = filenames.stream()
+            .map(f -> CompletableFuture.supplyAsync(() -> Utils.loadImage(f), executor))
+            .collect(Collectors.toList()); 
+
+        // Wait for all images to be loaded (Task[].WaitAll() in C#)
+        var allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+        
+        // non block join then process images (await Task then apply action in C#)
+        allFutures
+            .thenApply(v -> {
+            return futures.stream()
+                .map(f -> f.join())
+                .collect(Collectors.toList());
+            })
+            .thenApply(c -> Cleaners.CleanImage(c.get(0), c.get(1), c.get(2)))
+            .thenAccept(v -> Utils.writeImage(v, outputFilename));
 
         executor.shutdown();
+        executor.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES);
 
         Long timeEnd = System.currentTimeMillis();
-        System.out.println("Parallel Image Clean Finished...");
+        System.out.println("\nFinished PoolThread Image Clean...");
         System.out.println("Time: " + (timeEnd - timeStart) + " ms");
     }
 }
