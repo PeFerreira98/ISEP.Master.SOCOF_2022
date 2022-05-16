@@ -9,8 +9,7 @@ import java.awt.Color;
  * @version 1.0
  * @since 2022-01-04
  */
-public class Filters implements Runnable{
-
+public class Filters implements Runnable {
     String filename;
     float threshold;
     String outputFilename;
@@ -29,7 +28,6 @@ public class Filters implements Runnable{
         }
     }
 
-    // Highlight Fires.
     public void HighLightFireFilter() throws IOException {
         var image = Utils.loadImage(filename);
 
@@ -41,7 +39,7 @@ public class Filters implements Runnable{
     public static Color[][] HighLightFire(Color[][] tmp, float threshold) {
         for (int i = 0; i < tmp.length; i++) {
             for (int j = 0; j < tmp[i].length; j++) {
-                tmp[i][j] = Utils.RedFilter(tmp[i][j], threshold);
+                tmp[i][j] = Utils.redFilter(tmp[i][j], threshold);
             }
 
             if (i % 100 == 0)

@@ -122,7 +122,7 @@ public class Utils {
     return result;
   }
 
-  public static Color RedFilter(Color pixel, float threshold) {
+  public static Color redFilter(Color pixel, float threshold) {
     // fetches values of each pixel
     int r = pixel.getRed();
     int g = pixel.getGreen();
